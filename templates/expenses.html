@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block title %}Expenses — FinTrack{% endblock %}
+{% block page_title %}Expenses{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Expenses</h1>
+    <p class="page-sub">Total: <strong>₹{{ "%.2f"|format(total) }}</strong></p>
+  </div>
+  <button class="btn-primary" onclick="document.getElementById('addModal').classList.add('show')">+ Add Expense</button>
+</div>
+
+<!-- Month Filter -->
+<div class="filter-bar">
+  <form method="GET" class="filter-form">
+    <input type="month" name="month" value="{{ filter_month }}" onchange="this.form.submit()" class="month-input" />
+  </form>
+</div>
+
+<!-- Expense Table -->
+<div class="table-card">
+  {% if expenses %}
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Category</th>
+          <th>Date</th>
+          <th>Notes</th>
+          <th>Amount</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for e in expenses %}
+        <tr>
+          <td class="td-title">{{ e.title }}</td>
+          <td>
+            {% if e.categories %}
+            <span class="cat-badge" style="background: {{ e.categories.color }}22; color: {{ e.categories.color }}; border-color: {{ e.categories.color }}44">
+              {{ e.categories.name }}
+            </span>
+            {% else %}
+            <span class="cat-badge muted">Uncategorized</span>
+            {% endif %}
+          </td>
+          <td class="td-date">{{ e.date }}</td>
+          <td class="td-notes">{{ e.notes or '—' }}</td>
+          <td class="td-amount expense">-₹{{ "%.2f"|format(e.amount) }}</td>
+          <td>
+            <form method="POST" action="{{ url_for('delete_expense', eid=e.id) }}" onsubmit="return confirm('Delete this expense?')">
+              <button type="submit" class="btn-icon danger" title="Delete">✕</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-icon">💸</div>
+    <p>No expenses for this month.</p>
+    <button class="btn-primary" onclick="document.getElementById('addModal').classList.add('show')">Add your first expense</button>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Add Expense Modal -->
+<div class="modal-overlay" id="addModal" onclick="if(event.target===this)this.classList.remove('show')">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Add Expense</h3>
+      <button class="modal-close" onclick="document.getElementById('addModal').classList.remove('show')">✕</button>
+    </div>
+    <form method="POST" class="modal-form">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Title *</label>
+          <input type="text" name="title" required placeholder="e.g. Groceries" />
+        </div>
+        <div class="form-group">
+          <label>Amount (₹) *</label>
+          <input type="number" name="amount" required step="0.01" min="0" placeholder="0.00" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Category</label>
+          <select name="category_id">
+            <option value="">— None —</option>
+            {% for c in categories %}
+            <option value="{{ c.id }}">{{ c.icon }} {{ c.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Date *</label>
+          <input type="date" name="date" required value="{{ now.strftime('%Y-%m-%d') if now else '' }}" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Notes</label>
+        <textarea name="notes" rows="2" placeholder="Optional note..."></textarea>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-ghost" onclick="document.getElementById('addModal').classList.remove('show')">Cancel</button>
+        <button type="submit" class="btn-primary">Add Expense</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+// Auto-set date to today
+document.querySelector('input[type="date"]').value = new Date().toISOString().slice(0,10);
+</script>
+{% endblock %}

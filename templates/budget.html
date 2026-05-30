@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Budget — FinTrack{% endblock %}
+{% block page_title %}Budget{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Budget</h1>
+    <p class="page-sub">Set spending limits per category</p>
+  </div>
+  <button class="btn-primary" onclick="document.getElementById('addModal').classList.add('show')">+ Set Budget</button>
+</div>
+
+{% if budgets %}
+<div class="budget-cards-grid">
+  {% for b in budgets %}
+  <div class="budget-card {% if b.pct > 90 %}over{% elif b.pct > 70 %}warn{% endif %}">
+    <div class="budget-card-top">
+      <div class="budget-card-name">
+        <div class="budget-dot" style="background: {{ b.categories.color if b.categories else '#6366f1' }}"></div>
+        <span>{{ b.categories.name if b.categories else 'General' }}</span>
+      </div>
+      <form method="POST" action="{{ url_for('delete_budget', bid=b.id) }}" onsubmit="return confirm('Remove this budget?')">
+        <button type="submit" class="btn-icon sm danger">✕</button>
+      </form>
+    </div>
+    <div class="budget-card-amounts">
+      <span class="spent-amount">₹{{ "%.0f"|format(b.spent) }}</span>
+      <span class="limit-amount">/ ₹{{ "%.0f"|format(b.amount) }}</span>
+    </div>
+    <div class="progress-track lg">
+      <div class="progress-fill {% if b.pct > 90 %}danger{% elif b.pct > 70 %}warn{% endif %}" style="width: {{ b.pct }}%"></div>
+    </div>
+    <div class="budget-card-footer">
+      <span class="remaining {% if b.remaining < 0 %}danger{% endif %}">
+        {% if b.remaining >= 0 %}₹{{ "%.0f"|format(b.remaining) }} left{% else %}₹{{ "%.0f"|format(b.remaining|abs) }} over{% endif %}
+      </span>
+      <span class="pct-label {{ 'danger' if b.pct > 90 else ('warn' if b.pct > 70 else '') }}">{{ b.pct }}%</span>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty-state large">
+  <div class="empty-icon">🎯</div>
+  <h3>No budgets set</h3>
+  <p>Set spending limits to stay on track.</p>
+  <button class="btn-primary" onclick="document.getElementById('addModal').classList.add('show')">Create your first budget</button>
+</div>
+{% endif %}
+
+<!-- Add Budget Modal -->
+<div class="modal-overlay" id="addModal" onclick="if(event.target===this)this.classList.remove('show')">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Set Budget</h3>
+      <button class="modal-close" onclick="document.getElementById('addModal').classList.remove('show')">✕</button>
+    </div>
+    <form method="POST" class="modal-form">
+      <div class="form-group">
+        <label>Category</label>
+        <select name="category_id">
+          <option value="">— General —</option>
+          {% for c in categories %}
+          <option value="{{ c.id }}">{{ c.icon }} {{ c.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Monthly Limit (₹) *</label>
+          <input type="number" name="amount" required step="0.01" min="0" placeholder="5000.00" />
+        </div>
+        <div class="form-group">
+          <label>Month</label>
+          <input type="month" name="month" value="{{ now.strftime('%Y-%m') if now else '' }}" />
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-ghost" onclick="document.getElementById('addModal').classList.remove('show')">Cancel</button>
+        <button type="submit" class="btn-primary">Save Budget</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+const monthInput = document.querySelector('input[type="month"]');
+if (monthInput) monthInput.value = new Date().toISOString().slice(0,7);
+</script>
+{% endblock %}

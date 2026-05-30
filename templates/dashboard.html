@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — FinTrack{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Dashboard</h1>
+    <p class="page-sub">{{ month }} overview</p>
+  </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="cards-grid">
+  <div class="summary-card income">
+    <div class="card-label">Total Income</div>
+    <div class="card-amount">₹{{ "%.2f"|format(total_income) }}</div>
+    <div class="card-icon">↑</div>
+  </div>
+  <div class="summary-card expense">
+    <div class="card-label">Total Expenses</div>
+    <div class="card-amount">₹{{ "%.2f"|format(total_expense) }}</div>
+    <div class="card-icon">↓</div>
+  </div>
+  <div class="summary-card {% if balance >= 0 %}positive{% else %}negative{% endif %}">
+    <div class="card-label">Net Balance</div>
+    <div class="card-amount">₹{{ "%.2f"|format(balance) }}</div>
+    <div class="card-icon">{% if balance >= 0 %}✓{% else %}!{% endif %}</div>
+  </div>
+  <div class="summary-card savings">
+    <div class="card-label">Savings Rate</div>
+    <div class="card-amount">{{ savings_rate }}%</div>
+    <div class="card-icon">◈</div>
+  </div>
+</div>
+
+<!-- Charts Row -->
+<div class="charts-row">
+  <div class="chart-card wide">
+    <div class="chart-header">
+      <h3>7-Day Spending Trend</h3>
+    </div>
+    <canvas id="trendChart" height="80"></canvas>
+  </div>
+  <div class="chart-card">
+    <div class="chart-header">
+      <h3>By Category</h3>
+    </div>
+    <canvas id="catChart" height="160"></canvas>
+  </div>
+</div>
+
+<!-- Budget Progress -->
+{% if budget_progress %}
+<div class="section-card">
+  <div class="section-header">
+    <h3>Budget Progress</h3>
+    <a href="{{ url_for('budget') }}" class="see-all">See all →</a>
+  </div>
+  <div class="budget-list">
+    {% for b in budget_progress %}
+    <div class="budget-item">
+      <div class="budget-meta">
+        <span class="budget-name">{{ b.categories.name if b.categories else 'General' }}</span>
+        <span class="budget-amounts">₹{{ "%.0f"|format(b.spent) }} / ₹{{ "%.0f"|format(b.amount) }}</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill {% if b.pct > 90 %}danger{% elif b.pct > 70 %}warn{% endif %}" style="width: {{ b.pct }}%"></div>
+      </div>
+      <span class="budget-pct {% if b.pct > 90 %}danger{% elif b.pct > 70 %}warn{% endif %}">{{ b.pct }}%</span>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- Recent Transactions -->
+<div class="section-card">
+  <div class="section-header">
+    <h3>Recent Transactions</h3>
+    <a href="{{ url_for('expenses') }}" class="see-all">See all →</a>
+  </div>
+  {% if recent_expenses %}
+  <div class="tx-list">
+    {% for e in recent_expenses %}
+    <div class="tx-item">
+      <div class="tx-dot" style="background: {{ e.categories.color if e.categories else '#6366f1' }}"></div>
+      <div class="tx-info">
+        <span class="tx-title">{{ e.title }}</span>
+        <span class="tx-cat">{{ e.categories.name if e.categories else 'Uncategorized' }}</span>
+      </div>
+      <div class="tx-right">
+        <span class="tx-amount">-₹{{ "%.2f"|format(e.amount) }}</span>
+        <span class="tx-date">{{ e.date }}</span>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <p>No transactions this month. <a href="{{ url_for('expenses') }}">Add one →</a></p>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+const trendData = {{ daily_trend|safe }};
+const catData = {{ cat_totals|safe }};
+
+// Trend Chart
+const trendLabels = Object.keys(trendData).map(d => {
+  const [y,m,day] = d.split('-');
+  return new Date(y,m-1,day).toLocaleDateString('en-IN',{weekday:'short'});
+});
+new Chart(document.getElementById('trendChart'), {
+  type: 'line',
+  data: {
+    labels: trendLabels,
+    datasets: [{
+      label: 'Spent',
+      data: Object.values(trendData),
+      borderColor: '#f97316',
+      backgroundColor: 'rgba(249,115,22,0.08)',
+      tension: 0.4,
+      fill: true,
+      pointBackgroundColor: '#f97316',
+      pointRadius: 4
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { display: false } },
+    scales: {
+      y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8', callback: v => '₹'+v } },
+      x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+    }
+  }
+});
+
+// Category Donut
+const catKeys = Object.keys(catData);
+if (catKeys.length > 0) {
+  new Chart(document.getElementById('catChart'), {
+    type: 'doughnut',
+    data: {
+      labels: catKeys,
+      datasets: [{
+        data: Object.values(catData),
+        backgroundColor: ['#6366f1','#f97316','#22c55e','#f43f5e','#a855f7','#14b8a6'],
+        borderWidth: 0,
+        hoverOffset: 6
+      }]
+    },
+    options: {
+      responsive: true,
+      cutout: '65%',
+      plugins: {
+        legend: { position: 'bottom', labels: { color: '#94a3b8', padding: 12, font: { size: 12 } } }
+      }
+    }
+  });
+}
+</script>
+{% endblock %}

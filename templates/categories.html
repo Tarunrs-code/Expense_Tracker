@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Categories — FinTrack{% endblock %}
+{% block page_title %}Categories{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Categories</h1>
+    <p class="page-sub">Organise your spending</p>
+  </div>
+  <button class="btn-primary" onclick="document.getElementById('addModal').classList.add('show')">+ Add Category</button>
+</div>
+
+{% if categories %}
+<div class="cat-grid">
+  {% for c in categories %}
+  <div class="cat-card" style="border-left: 3px solid {{ c.color }}">
+    <div class="cat-icon" style="background: {{ c.color }}22; color: {{ c.color }}">{{ c.icon }}</div>
+    <div class="cat-info">
+      <span class="cat-name">{{ c.name }}</span>
+      <span class="cat-color-dot" style="background: {{ c.color }}"></span>
+    </div>
+    <form method="POST" action="{{ url_for('delete_category', cid=c.id) }}" onsubmit="return confirm('Delete this category?')">
+      <button type="submit" class="btn-icon sm danger">✕</button>
+    </form>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty-state large">
+  <div class="empty-icon">🏷️</div>
+  <h3>No categories yet</h3>
+  <p>Add categories to better organise your expenses.</p>
+  <button class="btn-primary" onclick="document.getElementById('addModal').classList.add('show')">Create a category</button>
+</div>
+{% endif %}
+
+<!-- Add Category Modal -->
+<div class="modal-overlay" id="addModal" onclick="if(event.target===this)this.classList.remove('show')">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Add Category</h3>
+      <button class="modal-close" onclick="document.getElementById('addModal').classList.remove('show')">✕</button>
+    </div>
+    <form method="POST" class="modal-form">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Name *</label>
+          <input type="text" name="name" required placeholder="e.g. Food & Dining" />
+        </div>
+        <div class="form-group">
+          <label>Icon (emoji)</label>
+          <input type="text" name="icon" placeholder="🍔" maxlength="2" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Color</label>
+        <div class="color-picker-row">
+          <input type="color" name="color" value="#6366f1" id="colorPicker" />
+          <div class="color-presets">
+            {% for col in ['#6366f1','#f97316','#22c55e','#f43f5e','#a855f7','#14b8a6','#eab308','#3b82f6'] %}
+            <div class="color-preset" style="background: {{ col }}" onclick="document.getElementById('colorPicker').value='{{ col }}'"></div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-ghost" onclick="document.getElementById('addModal').classList.remove('show')">Cancel</button>
+        <button type="submit" class="btn-primary">Add Category</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
